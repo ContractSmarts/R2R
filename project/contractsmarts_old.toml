@@ -11,14 +11,16 @@ vlm = "azure/gpt-4o"
 # LLM used for transcription
 audio_lm = "azure/whisper-1"
 
-# Research agent models
-reasoning_llm = "azure/o4-mini"
-planning_llm  = "azure/o4-mini"
+# Reasoning model, used for `research` agent
+reasoning_llm = "azure/o3-mini"
+
+# Planning model, used for `research` agent
+planning_llm = "azure/o3-mini"
 
 [embedding]
 base_model = "azure/text-embedding-3-small"
 # leave blank for default base_dimension
-#base_dimension = 1536
+#base_dimension = 512
 
 [completion_embedding]
 base_model = "azure/text-embedding-3-small"
@@ -27,13 +29,12 @@ base_model = "azure/text-embedding-3-small"
 provider = "unstructured_local"
 strategy = "auto"
 chunking_strategy = "by_title"
-new_after_n_chars = 2048
-max_characters = 4096
-combine_under_n_chars = 1024
-overlap = 1024
+new_after_n_chars = 2_048
+max_characters = 4_096
+combine_under_n_chars = 1_024
+overlap = 1_024
 document_summary_model = "azure/gpt-4o-mini"
-# enable automatic extraction of entities and relations
-automatic_extraction = true 
+automatic_extraction = true # enable automatic extraction of entities and relations
 
   [ingestion.extra_parsers]
     pdf = ["zerox", "ocr"]
@@ -43,27 +44,9 @@ automatic_extraction = true
 
 [orchestration]
 provider = "hatchet"
-## Original config (large-scale deployment)
-## Azure F32s_v2, D32s_v5, E32s_v5
-## 
-# kg_creation_concurrency_limit = 32 # ~32 vCPUs
-# ingestion_concurrency_limit = 4    # 4+ vCPUs
-# kg_concurrency_limit = 8           # 8+ vCPUs
-
-## 8 vCPU settings
-# kg_creation_concurrency_limit = 8-12
-# ingestion_concurrency_limit = 4-6
-# kg_concurrency_limit = 6-8
-
-## 4 vCPU settings
-# kg_creation_concurrency_limit = 4-6
-# ingestion_concurrency_limit = 3-4
-# kg_concurrency_limit = 4
-
-## 2 vCPU settings (E2s v6)
-kg_creation_concurrency_limit = 2
-ingestion_concurrency_limit = 2
-kg_concurrency_limit = 2
+kg_creation_concurrency_limit = 32
+ingestion_concurrency_limit = 4
+kg_concurrency_limit = 8
 
 ## Database Limits (not required but adjustable)
 ## these values are unreasonably small but made this way to be testable
