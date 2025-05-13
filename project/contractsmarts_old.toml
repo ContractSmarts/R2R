@@ -12,10 +12,10 @@ vlm = "azure/gpt-4o"
 audio_lm = "azure/whisper-1"
 
 # Reasoning model, used for `research` agent
-reasoning_llm = "azure/o3-mini"
+reasoning_llm = "azure/o4-mini"
 
 # Planning model, used for `research` agent
-planning_llm = "azure/o3-mini"
+planning_llm = "azure/o4-mini"
 
 [embedding]
 base_model = "azure/text-embedding-3-small"
