@@ -300,6 +300,8 @@ services:
       - R2R_POSTGRES_DBNAME=${R2R_POSTGRES_DBNAME}
       
       # Hatchet workflow orchestration
+      - HATCHET_GRPC_HOST=hatchet-engine
+      - HATCHET_GRPC_PORT=7077
       - HATCHET_CLIENT_TOKEN=${HATCHET_CLIENT_TOKEN}
       - HATCHET_CLIENT_HOST=hatchet-engine
       - HATCHET_CLIENT_PORT=7077
