@@ -71,10 +71,10 @@ runtime:
   flushItemsThreshold: 100
   flushPeriodMilliseconds: 10
   flushStrategy: DYNAMIC
-  grpcBindAddress: 127.0.0.1
-  grpcBroadcastAddress: 127.0.0.1:7070
+  grpcBindAddress: 0.0.0.0
+  grpcBroadcastAddress: hatchet-engine:7077
   grpcMaxMsgSize: 4194304
-  grpcPort: 7070
+  grpcPort: 7077
   grpcRateLimit: 1000
   healthcheck: true
   limits:

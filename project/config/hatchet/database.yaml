@@ -1,6 +1,6 @@
 cacheDuration: 60000000000
 dbName: hatchet
-host: 127.0.0.1
+host: postgres
 logger:
   format: console
   level: warn
@@ -9,7 +9,7 @@ maxQueueConns: 50
 minConns: 10
 minQueueConns: 10
 password: hatchet
-port: 5431
+port: 5432
 seed:
   adminEmail: david@contractsmarts.ai
   adminName: admin
