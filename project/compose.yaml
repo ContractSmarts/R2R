@@ -290,7 +290,7 @@ services:
   #  - Uses Hatchet for workflow orchestration
   #  - Provides REST API for RAG operations on port 7272
   r2r:
-    image: sciphiai/r2r:latest
+    image: sciphiai/r2r:3.6.4
     environment:
       # Database connection (R2R database)
       - R2R_POSTGRES_USER=${R2R_POSTGRES_USER}
