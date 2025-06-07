@@ -1,0 +1,9 @@
+# Dockerfile.r2r-livepatch
+FROM sciphiai/r2r:3.6.4
+
+# Copy patch files and entrypoint script
+COPY patched /patches
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

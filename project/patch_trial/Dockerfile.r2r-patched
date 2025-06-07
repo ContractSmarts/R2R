@@ -1,0 +1,8 @@
+# Dockerfile.r2r-patched
+FROM sciphiai/r2r:3.6.4
+
+# Replace the orchestration config class
+COPY patched/orchestration.py /app/core/base/orchestration.py
+
+# Replace the hatchet provider class
+COPY patched/hatchet.py /app/core/providers/orchestration/hatchet.py
