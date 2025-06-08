@@ -28,6 +28,7 @@ services:
   # Sole postgres install service. R2R, Hatchet, etc. use the same postgres database
   postgres:
     image: pgvector/pgvector:pg16
+    profiles: [step1]
     environment:
       # Superuser (admin) credentials - from .env
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
@@ -57,12 +58,15 @@ services:
       -c max_connections=1024
       -c shared_preload_libraries=vector
 
+  ## after the first step, run `scripts/setup-db.sh`
+
   # MinIO is a self-hosted S3-compatible object storage service. It's used for:
   #   - File storage: PDFs, documents, images that R2R processes
   #   - Vector storage: Some R2R configurations use S3-compatible storage for vectors
   #   - Artifact storage: Processed documents, embeddings, etc.
   minio:
     image: minio/minio
+    profiles: [step2]
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
@@ -88,11 +92,12 @@ services:
   #  - Needs to communicate with other backend services
   graph_clustering:
     image: ragtoriches/cluster-prod
+    profiles: [step2]
     networks:
       - backend
     # Remove ports for security (R2R will access via http://graph_clustering:7276)
-    # ports:
-    #   - "7276:7276"
+    ports:
+      - "7276:7276"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7276/health"]
       interval: 10s
@@ -106,11 +111,12 @@ services:
   #  - Called by R2R during document ingestion 
   unstructured:
     image: ragtoriches/unst-prod
+    profiles: [step2]
     networks:
       - backend
     # Remove ports for security (R2R will access via http://unstructured:7275)
-    # ports:
-    #   - "7275:7275"  # Remove this once R2R integration is working
+    ports:
+      - "7275:7275"  # Remove this once R2R integration is working
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7275/health"]
       interval: 10s
@@ -124,6 +130,7 @@ services:
   #  - Reliability: Ensuring tasks don't get lost if workers crash
   hatchet-rabbitmq:
     image: "rabbitmq:3-management"
+    profiles: [step2]
     hostname: "hatchet-rabbitmq"
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
@@ -232,6 +239,7 @@ services:
   #  - Serves as the central workflow coordinator
   hatchet-engine:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-engine:v0.53.15
+    profiles: [step3]
     command: /hatchet/hatchet-engine --config /hatchet/config
     restart: on-failure
     environment:
@@ -265,6 +273,7 @@ services:
   #  - Web interface accessible on port 7274
   hatchet-dashboard:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-dashboard:v0.53.15
+    profiles: [step3]
     command: sh ./entrypoint.sh --config /hatchet/config
     restart: on-failure
     environment:

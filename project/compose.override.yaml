@@ -7,6 +7,8 @@ services:
   #  - Provides REST API for RAG operations on port 7272
   r2r:
     image: sciphiai/r2r:3.6.4
+    profiles:
+      - step4
     #build:
     #  context: .
     #  dockerfile: Dockerfile.r2r-livepatch
