@@ -1,3 +1,4 @@
+services:
   # R2R is the main RAG (Retrieval-Augmented Generation) application that:
   #  - Processes documents and creates embeddings
   #  - Performs semantic search and graph clustering

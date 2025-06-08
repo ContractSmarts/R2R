@@ -1,3 +1,5 @@
+name: contractsmarts
+
 # `docker compose` resolves variables at compose time from:
 # 1. Shell environment variables
 # 2. .env file in the same directory as the compose.yaml file

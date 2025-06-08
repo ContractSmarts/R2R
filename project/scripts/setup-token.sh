@@ -3,6 +3,10 @@
 set -e
 echo 'Starting token creation process...'
 
+# In your setup-token.sh script, make sure it uses the correct host
+export HATCHET_CLIENT_HOST=hatchet-engine
+export HATCHET_CLIENT_PORT=7077
+
 # Extract tenant ID from database.yaml config file
 CONFIG_FILE="/hatchet/config/database.yaml"
 
