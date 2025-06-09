@@ -56,6 +56,8 @@ document_summary_model = "azure/gpt-4.1-mini"
   grpc_host = "hatchet-engine"
   grpc_port = 7077
   use_tls = false
+  tls_insecure = true
+  
   ## 4 vCPU deployment
   kg_creation_concurrency_limit = 4 # 4-6
   ingestion_concurrency_limit = 4   # align with vCPU count
