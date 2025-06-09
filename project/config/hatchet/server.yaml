@@ -133,5 +133,5 @@ tenantAlerting:
   slack:
     scopes:
     - incoming-webhook
-tls:
-  tlsStrategy: tls
+#tls:
+#  tlsStrategy: tls
