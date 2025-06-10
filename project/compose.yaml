@@ -28,7 +28,6 @@ services:
   # Sole postgres install service. R2R, Hatchet, etc. use the same postgres database
   postgres:
     image: pgvector/pgvector:pg16
-    profiles: [postgres]
     environment:
       # Superuser (admin) credentials - from .env
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
@@ -66,7 +65,6 @@ services:
   #   - Artifact storage: Processed documents, embeddings, etc.
   minio:
     image: minio/minio
-    profiles: [step2]
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
@@ -92,7 +90,6 @@ services:
   #  - Needs to communicate with other backend services
   graph_clustering:
     image: ragtoriches/cluster-prod
-    profiles: [step2]
     networks:
       - backend
     # Remove ports for security (R2R will access via http://graph_clustering:7276)
@@ -111,7 +108,6 @@ services:
   #  - Called by R2R during document ingestion 
   unstructured:
     image: ragtoriches/unst-prod
-    profiles: [step2]
     networks:
       - backend
     # Remove ports for security (R2R will access via http://unstructured:7275)
@@ -131,7 +127,6 @@ services:
   #  - Reliability: Ensuring tasks don't get lost if workers crash
   hatchet-rabbitmq:
     image: "rabbitmq:3-management"
-    profiles: [hatchet]
     hostname: "hatchet-rabbitmq"
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
@@ -165,7 +160,7 @@ services:
   # Run with `docker compose --profile setup up hatchet-migration`. It only needs to be run once.
   hatchet-migration:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-migrate:v0.53.15
-    profiles: [hatchet]
+    profiles: [setup]
     environment:
       # Point to our shared postgres with the hatchet database
       - DATABASE_URL=postgres://${HATCHET_POSTGRES_USER}:${HATCHET_POSTGRES_PASSWORD}@postgres:5432/${HATCHET_POSTGRES_DBNAME}?sslmode=disable
@@ -185,7 +180,7 @@ services:
   # Run with `docker compose --profile setup up hatchet-setup-config`. It only needs to be run once.
   hatchet-setup-config:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:v0.53.15
-    profiles: [hatchet]
+    profiles: [setup]
     command: /hatchet/hatchet-admin quickstart --skip certs --generated-config-dir /hatchet/config --overwrite=false
     environment:
       # Point to our shared infrastructure
@@ -213,7 +208,7 @@ services:
   # Run with `docker compose --profile setup up setup-token`. It only needs to be run once.
   setup-token:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:v0.53.15
-    profiles: [hatchet]
+    profiles: [setup]
     command: sh /scripts/setup-token.sh
     environment:
       # Point to our shared infrastructure
@@ -240,7 +235,6 @@ services:
   #  - Serves as the central workflow coordinator
   hatchet-engine:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-engine:v0.53.15
-    profiles: [hatchet]
     command: /hatchet/hatchet-engine --config /hatchet/config
     restart: on-failure
     environment:
@@ -274,7 +268,6 @@ services:
   #  - Web interface accessible on port 7274
   hatchet-dashboard:
     image: ghcr.io/hatchet-dev/hatchet/hatchet-dashboard:v0.53.15
-    profiles: [hatchet]
     command: sh ./entrypoint.sh --config /hatchet/config
     restart: on-failure
     environment:

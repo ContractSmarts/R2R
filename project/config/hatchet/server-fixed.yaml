@@ -1,10 +1,10 @@
 additionalLoggers:
   pgxStats:
     format: console
-    level: debug
+    level: warn
   queue:
     format: console
-    level: debug
+    level: warn
 alerting:
   sentry:
     environment: development
@@ -39,7 +39,7 @@ encryption:
   masterKeyset: eyJwcmltYXJ5S2V5SWQiOjQwNDE2MTkxNTcsImtleSI6W3sia2V5RGF0YSI6eyJ0eXBlVXJsIjoidHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUuY3J5cHRvLnRpbmsuQWVzR2NtS2V5IiwidmFsdWUiOiJHaUN1eUVudW43Q29KWUlBdUd2UTJSVkRHRitLSjdSb0FoWnpWVkY4ZFZSc0tBPT0iLCJrZXlNYXRlcmlhbFR5cGUiOiJTWU1NRVRSSUMifSwic3RhdHVzIjoiRU5BQkxFRCIsImtleUlkIjo0MDQxNjE5MTU3LCJvdXRwdXRQcmVmaXhUeXBlIjoiVElOSyJ9XX0
 logger:
   format: console
-  level: debug
+  level: warn
 monitoring:
   enabled: true
   permittedTenants: null

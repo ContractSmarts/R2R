@@ -7,7 +7,6 @@ services:
   #  - Provides REST API for RAG operations on port 7272
   r2r:
     image: sciphiai/r2r:3.6.4
-    profiles: [r2r]
 
     environment:
       # Database connection (R2R database)
@@ -22,6 +21,13 @@ services:
       # Hatchet workflow orchestration
       - HATCHET_GRPC_HOST=hatchet-engine
       - HATCHET_GRPC_PORT=7077
+      - HATCHET_GRPC_TLS=false
+      - HATCHET_GRPC_INSECURE=true
+      
+      # this set to none should do it!
+      - HATCHET_CLIENT_TLS_STRATEGY=none
+
+      - HATCHET_CLIENT_HOST_PORT=hatchet-engine:7077
       - HATCHET_CLIENT_TOKEN=${HATCHET_CLIENT_TOKEN}
       - HATCHET_CLIENT_HOST=hatchet-engine
       - HATCHET_CLIENT_PORT=7077
@@ -30,8 +36,6 @@ services:
       - HATCHET_CLIENT_TLS=false
       - HATCHET_CLIENT_TLS_INSECURE=true
       - HATCHET_TLS=false
-      - HATCHET_GRPC_TLS=false
-      - HATCHET_GRPC_INSECURE=true
       
       # MinIO object storage
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
