@@ -9,9 +9,9 @@ volumes:
   # (named volumes)
   postgres_data:
   minio_data:
-  hatchet_rabbitmq_data:
-  hatchet_certs:
-  hatchet_api_key:
+  #hatchet_rabbitmq_data:
+  #hatchet_certs:
+  #hatchet_api_key:
   
 networks:
   postgres:
@@ -118,172 +118,66 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  
 
-  # RabbitMQ is a message queue broker that Hatchet uses for:
-  #  - Task queuing: Queuing workflow tasks to be processed
-  #  - Job distribution: Distributing work across multiple workers  
-  #  - Event handling: Managing workflow events and notifications
-  #  - Reliability: Ensuring tasks don't get lost if workers crash
-  hatchet-rabbitmq:
-    image: "rabbitmq:3-management"
-    hostname: "hatchet-rabbitmq"
+  # R2R is the main RAG (Retrieval-Augmented Generation) application that:
+  #  - Processes documents and creates embeddings
+  #  - Performs semantic search and graph clustering
+  #  - Stores data in PostgreSQL and MinIO object storage
+  #  - Uses Hatchet for workflow orchestration
+  #  - Provides REST API for RAG operations on port 7272
+  r2r:
+    image: sciphiai/r2r:3.6.4
+
     environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      # Database connection (R2R database)
+      - R2R_POSTGRES_USER=${R2R_POSTGRES_USER}
+      - R2R_POSTGRES_PASSWORD=${R2R_POSTGRES_PASSWORD}
+      - R2R_POSTGRES_HOST=postgres
+      - R2R_POSTGRES_PORT=5432
+      - R2R_POSTGRES_DBNAME=${R2R_POSTGRES_DBNAME}
+      - R2R_LOG_LEVEL=DEBUG
+      - LOG_LEVEL=DEBUG
+      
+      # MinIO object storage
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_ENDPOINT=http://minio:9000
+      
+      # Service endpoints (internal Docker network)
+      - GRAPH_CLUSTERING_ENDPOINT=http://graph_clustering:7276
+      - UNSTRUCTURED_ENDPOINT=http://unstructured:7275
+      
+      # R2R configuration
+      - R2R_PROJECT_NAME=${R2R_PROJECT_NAME:-contractsmarts_r2r}
+      - R2R_CONFIG_PATH=/app/user_configs/azure_cs.toml
+
+      # Unstructured configuration
+      - UNSTRUCTURED_SERVICE_URL=http://unstructured:7275
+      - UNSTRUCTURED_API_URL=https://api.unstructured.io/general/v0/general
+      - UNSTRUCTURED_NUM_WORKERS=10
+
     volumes:
-      - hatchet_rabbitmq_data:/var/lib/rabbitmq
-      # Note: Using defaults for now, can add custom config later:
-      # - ./conf/hatchet_rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./config/user:/app/user_configs
+      - ./user_tools:/app/user_tools
     networks:
-      - backend
+      - backend    # Access to MinIO, graph_clustering, unstructured, hatchet-engine
+      - postgres   # Database access
     ports:
-      - "5673:5672"   # AMQP port (for development/debugging)
-      - "15673:15672" # Management UI (for development/debugging)
+      - "7272:7272"  # R2R REST API
     healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    restart: on-failure
-  
-  # Hatchet migration creates the database schema (tables, indexes, etc.) that Hatchet needs to operate. This includes
-  #  - Database structure setup: Creates tables for workflows, tasks, users, etc.
-  #  - Schema versioning: Applies database migrations to get to the correct schema version
-  #  - One-time setup: Runs once to prepare the database, then exits
-  #
-  # Even though we created the empty hatchet database, we still need hatchet-migration because:
-  #  - Empty database: We created the database, but it has no tables yet
-  #  - Schema creation: Migration creates ~20+ tables Hatchet needs
-  #  - Proper structure: Creates indexes, constraints, foreign keys
-  #
-  # Run with `docker compose --profile setup up hatchet-migration`. It only needs to be run once.
-  hatchet-migration:
-    image: ghcr.io/hatchet-dev/hatchet/hatchet-migrate:v0.53.15
-    profiles: [setup]
-    environment:
-      # Point to our shared postgres with the hatchet database
-      - DATABASE_URL=postgres://${HATCHET_POSTGRES_USER}:${HATCHET_POSTGRES_PASSWORD}@postgres:5432/${HATCHET_POSTGRES_DBNAME}?sslmode=disable
-    networks:
-      - postgres  # Needs to connect to postgres
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"  # Run once and exit
-
-  # Hatchet-setup-config generates initial configuration files including:
-  #  - Server configuration (server.yaml) with encryption keys
-  #  - Authentication settings and cookie secrets
-  #  - Default tenant and user setup
-  #  - RabbitMQ and database connection configuration
-  #
-  # Run with `docker compose --profile setup up hatchet-setup-config`. It only needs to be run once.
-  hatchet-setup-config:
-    image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:v0.53.15
-    profiles: [setup]
-    command: /hatchet/hatchet-admin quickstart --skip certs --generated-config-dir /hatchet/config --overwrite=false
-    environment:
-      # Point to our shared infrastructure
-      - DATABASE_URL=postgres://${HATCHET_POSTGRES_USER}:${HATCHET_POSTGRES_PASSWORD}@postgres:5432/${HATCHET_POSTGRES_DBNAME}?sslmode=disable
-      - SERVER_TASKQUEUE_RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@hatchet-rabbitmq:5672/
-    volumes:
-      - hatchet_certs:/hatchet/certs 
-      - ./config/hatchet:/hatchet/config  # Bind mount so you can access/edit config files
-    networks:
-      - postgres   # Needs database access for tenant setup
-      - backend    # Needs RabbitMQ access for queue configuration
-    depends_on:
-      hatchet-migration:
-        condition: service_completed_successfully
-      hatchet-rabbitmq:
-        condition: service_healthy
-    restart: "no"  # Run once and exit
-
-  # Hatchet setup-token generates API tokens for external services:
-  #  - Creates authentication tokens for services like R2R
-  #  - Stores tokens in shared volume for other containers to access
-  #  - Enables programmatic access to Hatchet workflow APIs
-  #  - Must run after config setup to use generated configuration
-  #
-  # Run with `docker compose --profile setup up setup-token`. It only needs to be run once.
-  setup-token:
-    image: ghcr.io/hatchet-dev/hatchet/hatchet-admin:v0.53.15
-    profiles: [setup]
-    command: sh /scripts/setup-token.sh
-    environment:
-      # Point to our shared infrastructure
-      - DATABASE_URL=postgres://${HATCHET_POSTGRES_USER}:${HATCHET_POSTGRES_PASSWORD}@postgres:5432/${HATCHET_POSTGRES_DBNAME}?sslmode=disable
-      - SERVER_TASKQUEUE_RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@hatchet-rabbitmq:5672/
-    volumes:
-      - ./scripts:/scripts
-      - ./config/hatchet:/hatchet/config  # Read config created by setup-config
-      - hatchet_certs:/hatchet/certs
-      - hatchet_api_key:/hatchet_api_key  # Store generated tokens here
-    networks:
-      - postgres   # Needs database access to create tokens
-      - backend    # May need RabbitMQ access
-    depends_on:
-      hatchet-setup-config:
-        condition: service_completed_successfully
-    restart: "no"  # Run once and exit
-
-  # Hatchet engine is the core workflow orchestration service that:
-  #  - Manages workflow execution and task distribution
-  #  - Connects to PostgreSQL for state management
-  #  - Uses RabbitMQ for task queuing and worker communication
-  #  - Provides GRPC API on port 7077 for external services
-  #  - Serves as the central workflow coordinator
-  hatchet-engine:
-    image: ghcr.io/hatchet-dev/hatchet/hatchet-engine:v0.53.15
-    command: /hatchet/hatchet-engine --config /hatchet/config
-    restart: on-failure
-    environment:
-      # Point to our shared infrastructure
-      - DATABASE_URL=postgres://${HATCHET_POSTGRES_USER}:${HATCHET_POSTGRES_PASSWORD}@postgres:5432/${HATCHET_POSTGRES_DBNAME}?sslmode=disable
-      - SERVER_TASKQUEUE_RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@hatchet-rabbitmq:5672/
-    volumes:
-      - hatchet_certs:/hatchet/certs
-      - ./config/hatchet:/hatchet/config  # Use consistent path
-    networks:
-      - postgres   # Needs database access for workflow state
-      - backend    # Needs RabbitMQ for task queuing
-    ports:
-      - "7077:7077"  # GRPC API for workflow management
-      - "8733:8733"  # Health endpoint
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8733/live"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:7272/v3/health"]
+      interval: 6s
       timeout: 5s
       retries: 5
+    restart: on-failure
+    extra_hosts:
+      - host.docker.internal:host-gateway
     depends_on:
       postgres:
         condition: service_healthy
-      hatchet-rabbitmq:
+      graph_clustering:
         condition: service_healthy
-
-  # Hatchet dashboard provides the web UI for workflow management:
-  #  - Workflow monitoring and execution visualization
-  #  - User authentication and tenant management  
-  #  - Dashboard for workflow runs, workers, and system status
-  #  - Web interface accessible on port 7274
-  hatchet-dashboard:
-    image: ghcr.io/hatchet-dev/hatchet/hatchet-dashboard:v0.53.15
-    command: sh ./entrypoint.sh --config /hatchet/config
-    restart: on-failure
-    environment:
-      # Database connection (dashboard needs direct DB access)
-      - DATABASE_URL=postgres://${HATCHET_POSTGRES_USER}:${HATCHET_POSTGRES_PASSWORD}@postgres:5432/${HATCHET_POSTGRES_DBNAME}?sslmode=disable
-      # RabbitMQ connection  
-      - SERVER_TASKQUEUE_RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@hatchet-rabbitmq:5672/
-    volumes:
-      - hatchet_certs:/hatchet/certs
-      - ./config/hatchet:/hatchet/config
-    networks:
-      - frontend  # User-facing web interface
-      - backend   # Needs to communicate with hatchet-engine
-      - postgres  # Needs direct database access
-    ports:
-      - "7274:80"  # Web dashboard interface
-    depends_on:
-      hatchet-engine:
+      unstructured:
+        condition: service_healthy
+      minio:
         condition: service_healthy

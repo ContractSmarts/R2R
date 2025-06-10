@@ -93,8 +93,8 @@ main() {
     echo "===== Starting R2R setup ====="
     setup_r2r_db
 
-    echo "===== Starting Hatchet setup ====="
-    setup_hatchet_db
+    #echo "===== Starting Hatchet setup ====="
+    #setup_hatchet_db
 
     echo "✅ All databases and users setup completed successfully!"
 
