@@ -1,6 +1,6 @@
 # Configuration
 IMAGE_NAME := csmarts/r2r
-VERSION := 3.7.0
+VERSION := 3.7.1
 FULL_TAG := $(IMAGE_NAME):$(VERSION)
 EXPORT_FILE := r2r_custom_$(VERSION).tar.gz
 

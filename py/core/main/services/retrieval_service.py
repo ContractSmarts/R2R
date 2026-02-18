@@ -1679,7 +1679,7 @@ class RetrievalService(Service):
                 if hasattr(agent, "tool_calls"):
                     if agent.tool_calls is not None:
                         tool_calls = agent.tool_calls
-                    else:/
+                    else:
                         logger.warning(
                             "agent.tool_calls is None, using empty list instead"
                         )
