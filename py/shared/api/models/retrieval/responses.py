@@ -259,6 +259,9 @@ class AgentResponse(R2RSerializable):
     conversation_id: str = Field(
         ..., description="The conversation ID for the RAG agent response"
     )
+    message_id: Optional[str] = Field(
+        None, description="The message ID of the generated assistant response"
+    )
 
     class Config:
         json_schema_extra = {
@@ -324,10 +327,7 @@ class AgentResponse(R2RSerializable):
                                         "122fdf6a-e116-546b-a8f6-e4cb2e2c0a09"
                                     ],
                                     "score": 0.64,
-                                    "text": """
-                                    Document Title: DeepSeek_R1.pdf
-                                    \n\nText: could achieve an accuracy of ...
-                                    """,
+                                    "text": "",
                                     "metadata": {
                                         "title": "DeepSeek_R1.pdf",
                                         "license": "CC-BY-4.0",
