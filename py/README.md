@@ -1,3 +1,7 @@
+<h2 align="center">
+ContractSmarts Fork of R2R Retrieval-Augmented Generation (RAG)
+</h2>
+
 <img width="1217" alt="Screenshot 2025-03-27 at 6 35 02 AM" src="https://github.com/user-attachments/assets/10b530a6-527f-4335-b2e4-ceaa9fc1219f" />
 
 <h3 align="center">
