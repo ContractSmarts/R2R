@@ -1683,6 +1683,16 @@ class RetrievalService(Service):
                         logger.warning(
                             "agent.tool_calls is None, using empty list instead"
                         )
+
+                # 1. Create a deep copy to ensure zero side effects
+                import copy
+                final_citations_scrubbed = copy.deepcopy(final_citations)
+                # 2. Scrub the text bloat from the copy
+                for c in final_citations_scrubbed:
+                    if 'payload' in c and isinstance(c['payload'], dict):
+                        c['payload'].pop('text', None)
+
+
                 # Return the final response
                 return {
                     "messages": [
@@ -1692,16 +1702,20 @@ class RetrievalService(Service):
                             or structured_content
                             or "",
                             metadata={
-                                "citations": final_citations,
+                                "message_id": str(message_id),
+                                "citations": final_citations_scrubbed,
                                 "tool_calls": tool_calls,
-                                "aggregated_search_result": json.dumps(
-                                    dump_collector(collector)
-                                ),
+                                "aggregated_search_result": "[]",
                             },
                         )
                     ],
                     "conversation_id": str(conversation_id),
+                    "message_id": str(message_id)
                 }
+
+                # note: replaced "aggregated_search_result": json.dumps(dump_collector(collector)),
+                #       with "aggregated_search_result": "[]",
+                #       to reduce bloat, we may need to investigate later
 
         except Exception as e:
             logger.error(f"Error in agent response: {str(e)}")
