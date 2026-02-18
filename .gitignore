@@ -43,3 +43,5 @@ go.work.sum
 .ruff_cache/
 *.egg-info
 .venv
+
+r2r_custom_*.tar.gz
