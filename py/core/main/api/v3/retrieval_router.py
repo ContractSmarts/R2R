@@ -454,7 +454,7 @@ class RetrievalRouter(BaseRouterV3):
                                     "role": "user",
                                     "content": "Do a deep analysis of the philosophical implications of DeepSeek R1"
                                 },
-                                rag_tools=["web_search", "web_scrape", "search_file_descriptions", "search_file_knowledge", "get_file_content"],
+                                rag_tools=["tavily_search", "web_search", "web_scrape", "search_file_descriptions", "search_file_knowledge", "get_file_content"],
                             )
                             """
                         ),
@@ -475,7 +475,7 @@ class RetrievalRouter(BaseRouterV3):
                                         role: "user",
                                         content: "Do a deep analysis of the philosophical implications of DeepSeek R1"
                                     },
-                                    ragTools: ["web_search", "web_scrape", "search_file_descriptions", "search_file_knowledge", "get_file_content"]
+                                    ragTools: ["tavily_search", "web_search", "web_scrape", "search_file_descriptions", "search_file_knowledge", "get_file_content"]
                                 });
                             }
 
@@ -500,7 +500,7 @@ class RetrievalRouter(BaseRouterV3):
                                     "use_semantic_search": true,
                                     "filters": {"document_id": {"$eq": "e43864f5-a36f-548e-aacd-6f8d48b30c7f"}}
                                 },
-                                "rag_tools": ["search_file_knowledge", "get_file_content", "web_search"]
+                                "rag_tools": ["tavily_search", "search_file_knowledge", "get_file_content", "web_search"]
                             }'
 
                             # Advanced analysis with extended thinking
@@ -575,6 +575,7 @@ class RetrievalRouter(BaseRouterV3):
             rag_tools: Optional[
                 list[
                     Literal[
+                        "tavily_search", 
                         "web_search",
                         "web_scrape",
                         "search_file_descriptions",

@@ -1,28 +1,25 @@
-import asyncio
 import logging
-import os
-import uuid
-from typing import Any, Dict, List
 
-# Import the actual R2R classes - we need WebPageSearchResult, not WebSearchResult
-from r2r import AggregateSearchResult, WebPageSearchResult, Tool
-from core.utils import generate_id
+from core.utils import (
+    generate_id,
+)
+from shared.abstractions.tool import Tool
 
 logger = logging.getLogger(__name__)
 
-class FixedTavilySearchTool(Tool):
+
+class TavilySearchTool(Tool):
     """
-    Fixed version of TavilySearchTool that actually works.
     Uses the Tavily Search API, a specialized search engine designed for
     Large Language Models (LLMs) and AI agents.
     """
 
     def __init__(self):
         super().__init__(
-            name="tavily_search",
+            name="tavily_search_old",
             description=(
                 "Use the Tavily search engine to perform an internet-based search and retrieve results. Useful when you need "
-                "to search the internet for specific information. The query should be no more than 400 characters."
+                "to search the internet for specific information.  The query should be no more than 400 characters."
             ),
             parameters={
                 "type": "object",
@@ -35,7 +32,7 @@ class FixedTavilySearchTool(Tool):
                         "type": "object",
                         "description": (
                             "Dictionary for additional parameters to pass to Tavily, such as max_results, include_domains and exclude_domains."
-                            '{"max_results": 3, "include_domains": ["example.com"], "exclude_domains": ["example2.com"]}'
+                            '{"max_results": 10, "include_domains": ["example.com"], "exclude_domains": ["example2.com"]}'
                         ),
                     },
                 },
@@ -45,13 +42,21 @@ class FixedTavilySearchTool(Tool):
             llm_format_function=None,
         )
 
-    async def execute(self, query: str, *args, **kwargs) -> AggregateSearchResult:
+    async def execute(self, query: str, *args, **kwargs):
         """
-        Calls Tavily's search API asynchronously and returns properly formatted results.
+        Calls Tavily's search API asynchronously.
         """
+        import asyncio
+        import os
+
+        from core.base.abstractions import (
+            AggregateSearchResult,
+            WebSearchResult,
+        )
+
         context = self.context
 
-        # Check if query is too long and truncate if necessary
+        # Check if query is too long and truncate if necessary. Tavily recommends under 400 chars.
         if len(query) > 400:
             logger.warning(
                 f"Tavily query is {len(query)} characters long, which exceeds the recommended 400 character limit. Consider breaking into smaller queries for better results."
@@ -65,7 +70,7 @@ class FixedTavilySearchTool(Tool):
             api_key = os.environ.get("TAVILY_API_KEY")
             if not api_key:
                 logger.warning("TAVILY_API_KEY environment variable not set")
-                return AggregateSearchResult(web_search_results=[])
+                return AggregateSearchResult()
 
             # Initialize Tavily client
             tavily_client = TavilyClient(api_key=api_key)
@@ -83,70 +88,36 @@ class FixedTavilySearchTool(Tool):
                 ),
             )
 
-            logger.info(f"Tavily search for '{query}' returned {len(raw_results.get('results', []))} results")
-
             # Extract the results from the response
             results = raw_results.get("results", [])
 
-            # Process the raw results into WebPageSearchResult objects (not WebSearchResult!)
-            search_results = []
-            for index, result in enumerate(results):
-                # Debug: log what we got from Tavily
-                logger.debug(f"Raw Tavily result {index}: {result}")
-                
-                # Create WebPageSearchResult with the correct field mapping from Tavily API
-                web_result = WebPageSearchResult(
+            # Process the raw results into a format compatible with AggregateSearchResult
+            search_results = [
+                WebSearchResult(  # type: ignore
                     title=result.get("title", "Untitled"),
-                    link=result.get("url", ""),  # Tavily uses 'url'
-                    snippet=result.get("content", ""),  # Tavily uses 'content'
+                    link=result.get("url", ""),
+                    snippet=result.get("content", ""),
                     position=index,
                     id=generate_id(result.get("url", "")),
                     type="tavily_search",
                 )
-                search_results.append(web_result)
-                
-                # Debug logging with actual values
-                logger.debug(f"Created search result {index}: '{web_result.title}' -> {web_result.link}")
-                logger.debug(f"  Content preview: {web_result.snippet[:100]}...")
+                for index, result in enumerate(results)
+            ]
 
-            # Create the aggregate result with web_page_search_results instead of web_search_results
-            result = AggregateSearchResult(web_page_search_results=search_results)
+            result = AggregateSearchResult(web_search_results=search_results)
 
             # Add to results collector if context is provided
             if context and hasattr(context, "search_results_collector"):
                 context.search_results_collector.add_aggregate_result(result)
 
-            logger.info(f"Successfully created {len(search_results)} web search results")
             return result
-
         except ImportError:
             logger.error(
                 "The 'tavily-python' package is not installed. Please install it with 'pip install tavily-python'"
             )
-            return AggregateSearchResult(web_page_search_results=[])
+            # Return empty results in case Tavily is not installed
+            return AggregateSearchResult()
         except Exception as e:
             logger.error(f"Error during Tavily search: {e}")
-            return AggregateSearchResult(web_page_search_results=[])
-
-
-# Test function to verify the fix works
-async def test_fixed_tool():
-    """Test function to verify the fixed tool works correctly"""
-    print("=== TESTING FIXED TAVILY SEARCH TOOL ===")
-    
-    tool = FixedTavilySearchTool()
-    result = await tool.execute("who is the president of the USA")
-    
-    print(f"Result type: {type(result)}")
-    print(f"Number of results: {len(result.web_page_search_results)}")
-    
-    for i, res in enumerate(result.web_page_search_results[:3]):  # Show first 3
-        print(f"\nResult {i+1}:")
-        print(f"  Title: {res.title}")
-        print(f"  Link: {res.link}")
-        print(f"  Snippet: {res.snippet[:100]}...")
-
-
-if __name__ == "__main__":
-    # Run test if executed directly
-    asyncio.run(test_fixed_tool())
+            # Return empty results in case of any other error
+            return AggregateSearchResult()
